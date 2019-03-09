@@ -18,7 +18,22 @@ def log_file(other_func):
     return write_log
 
 
-@log_file
+def decorator_path(path):
+    def decorator_log(other_func):
+        def write_log(*args, **kwargs):
+            with open(f'{path}.txt', 'w') as file:
+                file.write(str(datetime.datetime.now()))
+                file.write('\t')
+                file.write(*args, **kwargs)
+                file.write('\t')
+                file.write(other_func.__name__)
+            result = other_func(*args, **kwargs)
+            return result
+        return write_log
+    return decorator_log
+
+
+@decorator_path('homework')
 def get_descriptions(filename):
     words_list = list()
     with open(filename, encoding='UTF-8') as file:

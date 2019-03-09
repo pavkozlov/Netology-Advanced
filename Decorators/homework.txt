@@ -1,0 +1,1 @@
+2019-03-09 19:59:11.572592	newsafr.json	get_descriptions

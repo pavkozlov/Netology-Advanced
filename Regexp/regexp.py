@@ -1,37 +1,47 @@
 import re
 import csv
 
-with open("phonebook_raw.csv", encoding='utf8') as f:
-    rows = csv.reader(f, delimiter=",")
-    contact_list = list(rows)
 
-pattern = '(^[А-Яа-яёЁ]*)\s?\,?([а-яА-Я]*)\s?\,?([А-Яа-я]*)?,*[а-яА-Я,\s–]*(\+7|8)?\s?\(?(\d{3})?\)?\s?\-?(\d{3})?\-?(\d{2})?\-?(\d{2})?\s?\(?[А-Яа-я. ]*(\d*)?'
-pattern = re.compile(pattern)
+class PhoneBook:
+    def __init__(self, filename, outfile_name='phonebook.csv'):
+        self.pattern = '(^[А-Яа-яёЁ]*)\s?\,?([а-яА-Я]*)\s?\,?([А-Яа-я]*)?,*[а-яА-Я,\s–]*(\+7|8)?\s?\(?(\d{3})?\)?\s?\-?(\d{3})?\-?(\d{2})?\-?(\d{2})?\s?\(?[А-Яа-я. ]*(\d*)?.*'
+        self.filename = filename
+        self.contact_list = self.open_and_read()
+        self.info_list = self.find_info()
+        self.result = self.format_info()
+        self.outfile_name = outfile_name
+        self.write_to_file()
 
-result_list = list()
+    def open_and_read(self):
+        with open(self.filename, encoding='utf8') as f:
+            rows = csv.reader(f, delimiter="\n")
+            contact_list = list(rows)
+        return contact_list
 
-for i in contact_list[1:]:
-    res = list(pattern.findall('\n'.join(i))[0])
-    if res[4] and res[5]:
-        if res[8]:
-            if res[3] == '+7':
-                result = (f'{res[0]} {res[1]} {res[2]} {res[3]}({res[4]}){res[5]}-{res[6]}-{res[7]} доб.{res[8]}')
-                result_list.append(result)
+    def find_info(self):
+        info_list = list()
+        for i in self.contact_list[1:]:
+            info_list.append(re.sub(self.pattern, r'\1 \2 \3 +7(\5)\6-\7-\8 (доб.\9)', ''.join(i)))
+        return info_list
+
+    def format_info(self):
+        result = list()
+        for contact in self.info_list:
+            contact = contact.split()
+            if len(contact[3]) < 16:
+                pass
             else:
-                result = (f'{res[0]} {res[1]} {res[2]} +7({res[4]}){res[5]}-{res[6]}-{res[7]} доб.{res[8]}')
-                result_list.append(result)
-        else:
-            if res[3] == '+7':
-                result = (f'{res[0]} {res[1]} {res[2]} {res[3]}({res[4]}){res[5]}-{res[6]}-{res[7]}')
-                result_list.append(result)
-            else:
-                result = (f'{res[0]} {res[1]} {res[2]} +7({res[4]}){res[5]}-{res[6]}-{res[7]}')
-                result_list.append(result)
+                if len(contact[4]) > 6:
+                    result.append(contact)
+                else:
+                    result.append(contact[:4])
+        return result
 
-print(result_list)
-with open("phonebook.csv", "w", encoding='utf8') as f:
-    datawriter = csv.writer(f,)
-    datawriter = csv.writer(f, delimiter=',')
-    for row in result_list:
-        columns = [c.strip() for c in row.strip(', ').split(',')]
-        datawriter.writerow(columns)
+    def write_to_file(self):
+        with open(self.outfile_name, "w", encoding='utf8') as f:
+            for items in self.result:
+                f.write(' '.join(items) + ',\n')
+
+
+if __name__ == '__main__':
+    PhoneBook('phonebook_raw.csv')

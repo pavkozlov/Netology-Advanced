@@ -68,7 +68,6 @@ class Config:
             elif x[2]:
                 default = x[0] if text else x[1]
                 break
-
         return default
 
     @staticmethod

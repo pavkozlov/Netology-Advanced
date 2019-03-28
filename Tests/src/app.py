@@ -16,5 +16,6 @@ class App:
         print(self.config.config_paths)
 
 
+
 if __name__ == '__main__':
     App().run()

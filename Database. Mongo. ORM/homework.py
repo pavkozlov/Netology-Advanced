@@ -10,17 +10,19 @@ tickets_db = client.ticket_db
 
 def read_data(filename):
     with open(filename, encoding='utf8') as f:
-        res = []
         reader = csv.reader(f)
         next(reader)
+        my_dict_list = list()
         for line in reader:
             name, price, place, date = line
-            tickets_db.tickets.insert_one({
+            my_dict = {
                 'name': name,
                 'price': int(price),
                 'place': place,
                 'date': date
-            })
+            }
+            my_dict_list.append(my_dict)
+        tickets_db.tickets.insert_many(d for d in my_dict_list)
 
 
 def find_cheapest():
@@ -31,26 +33,22 @@ def find_cheapest():
 
 
 def find_by_name(name):
+    escaped_name = re.escape(name)
+    pattern = re.compile(r'(.*?{}.*?)'.format(escaped_name), re.IGNORECASE)
+    res = tickets_db.tickets.find({'name': pattern})
     result = list()
-    pattern = f'(.*{name}.*)'
-    for ticket in tickets_db.tickets.find({}):
-        z = re.search(pattern, ticket['name'], flags=re.IGNORECASE)
-        if z:
-            result.append(z.group())
+    for item in res:
+        result.append(item['name'])
     return result
 
 
-def date_search(needed_data: datetime):
+def date_search(needed_data):
+    needed_data = re.escape(needed_data)
+    pattern = re.compile(r'({}.*?)'.format(needed_data), re.IGNORECASE)
+    res = tickets_db.tickets.find({'date': pattern})
     result = list()
-    for ticket in tickets_db.tickets.find({}):
-        try:
-            date = datetime(year=2019, month=int(ticket['date'][3:]), day=int(ticket['date'][:2]))
-        except ValueError:
-            date = datetime(year=2019, month=int(ticket['date'][3:]), day=int(ticket['date'][:1]))
-        datetime_object = datetime.strptime(needed_data, '%d.%m.%Y')
-        if date == datetime_object:
-            result.append(
-                f"{ticket['name']} - ({ticket['price']} руб.). По адресу: {ticket['place']} ({ticket['date']}.2019)")
+    for item in res:
+        result.append(item['name'])
     return result
 
 
@@ -61,7 +59,7 @@ def run():
         print('Данные уже в базе')
     print(find_by_name('К'))
     pprint(find_cheapest())
-    print(date_search('13.07.2019'))
+    print(date_search('13.07'))
 
 
 if __name__ == '__main__':

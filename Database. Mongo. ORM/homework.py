@@ -15,6 +15,9 @@ def read_data(filename):
         my_dict_list = list()
         for line in reader:
             name, price, place, date = line
+            date = date.split('.')
+            date = list(map(int, date))
+            date = datetime(day=date[0], month=date[1], year=2019)
             my_dict = {
                 'name': name,
                 'price': int(price),
@@ -22,7 +25,7 @@ def read_data(filename):
                 'date': date
             }
             my_dict_list.append(my_dict)
-        tickets_db.tickets.insert_many(d for d in my_dict_list)
+        tickets_db.tickets.insert_many(my_dict_list)
 
 
 def find_cheapest():
@@ -36,20 +39,16 @@ def find_by_name(name):
     escaped_name = re.escape(name)
     pattern = re.compile(r'(.*?{}.*?)'.format(escaped_name), re.IGNORECASE)
     res = tickets_db.tickets.find({'name': pattern})
-    result = list()
-    for item in res:
-        result.append(item['name'])
+    result = list(res)
     return result
 
 
 def date_search(needed_data):
-    needed_data = re.escape(needed_data)
-    pattern = re.compile(r'({}.*?)'.format(needed_data), re.IGNORECASE)
-    res = tickets_db.tickets.find({'date': pattern})
-    result = list()
-    for item in res:
-        result.append(item['name'])
-    return result
+    needed_data = needed_data.split('.')
+    needed_data = list(map(int, needed_data))
+    needed_data = datetime(day=needed_data[0], month=needed_data[1], year=2019)
+    res = list(tickets_db.tickets.find({'date': needed_data}))
+    return res
 
 
 def run():

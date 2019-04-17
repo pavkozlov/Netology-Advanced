@@ -18,8 +18,8 @@ def create_db():
                         name character varying(100) NOT NULL)''')
             cur.execute('''create table student_course (
                         id serial PRIMARY KEY,
-                        student_id integer references student(id),
-                        course_id integer references course(id))''')
+                        student_id integer references student(id) ON DELETE CASCADE,
+                        course_id integer references course(id) ON DELETE CASCADE)''')
 
 
 def get_students(cur, course_id):

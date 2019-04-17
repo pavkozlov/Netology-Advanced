@@ -4,15 +4,12 @@ PARAMS = 'dbname=netology_homework user=homeworker password=qwerty123'
 
 
 def create_db():
-    student_fields = ', '.join(['id serial PRIMARY KEY', 'name character varying(100) NOT NULL', 'gpa numeric(10,2)',
-                                ' birth timestamp with time zone'])
-    course_fields = ', '.join(['id serial PRIMARY KEY', 'name character varying(100) NOT NULL'])
-    student_course_fields = ', '.join(['id serial PRIMARY KEY', 'student_id integer', 'course_id integer'])
     with psycopg2.connect(PARAMS) as conn:
         with conn.cursor() as cur:
-            cur.execute(f'create table student ({student_fields})')
-            cur.execute(f'create table course ({course_fields})')
-            cur.execute(f'create table student_course ({student_course_fields})')
+            cur.execute(
+                'create table student (id serial PRIMARY KEY, name character varying(100) NOT NULL, gpa numeric(10,2))')
+            cur.execute('create table course (id serial PRIMARY KEY, name character varying(100) NOT NULL)')
+            cur.execute('create table student_course (id serial PRIMARY KEY, student_id integer, course_id integer)')
 
 
 # create_db()
@@ -27,7 +24,7 @@ def get_students(course_id):
             return cur.fetchall()
 
 
-# print(get_students(1))
+print(get_students(1))
 
 
 def add_student(student):
@@ -39,8 +36,9 @@ def add_student(student):
             if student_is_in:
                 print('Такой студент уже есть')
             else:
-                cur.execute('insert into student (name, gpa, birth) values (%s, %s, %s) returning name',
+                cur.execute('insert into student (name, gpa, birth) values (%s, %s, %s) returning id',
                             (student['name'], student['gpa'], student['birth']))
+                print('created id:', cur.fetchone()[0])
 
 
 def add_students(course, students):
@@ -57,7 +55,16 @@ def add_students(course, students):
                 new_course = cur.fetchone()
                 course_id = new_course[0]
             for student in students:
-                add_student(student)
+                cur.execute('select * from student where student.name = %s AND student.birth = %s AND student.gpa = %s',
+                            (student['name'], student['birth'], student['gpa'],))
+                student_is_in = cur.fetchone()
+                if student_is_in:
+                    print('Такой студент уже есть')
+                else:
+                    cur.execute('insert into student (name, gpa, birth) values (%s, %s, %s) returning id',
+                                (student['name'], student['gpa'], student['birth']))
+                    print('created id:', cur.fetchone()[0])
+
                 cur.execute('select * from student where student.name = %s AND student.birth = %s AND student.gpa = %s',
                             (student['name'], student['birth'], student['gpa'],))
                 std = cur.fetchone()
@@ -71,38 +78,37 @@ def add_students(course, students):
                                 (std[0], course_id,))
 
 
-# students = [
-#     {
-#         'name': 'Иван Иванов',
-#         'gpa': 6.1,
-#         'birth': '01.02.1977'
-#     },
-#     {
-#         'name': 'Петр Петров',
-#         'gpa': 6.1,
-#         'birth': '02.11.1987'
-#     },
-#     {
-#         'name': 'Бори Борисов',
-#         'gpa': 1.5,
-#         'birth': '03.12.1997'
-#     }
-# ]
-#
-# course = {
-#     'name': 'PY-21'
-# }
-#
-# add_students(course, students)
+students = [
+    {
+        'name': 'Иван Иванов',
+        'gpa': 6.1,
+        'birth': '01.02.1977'
+    },
+    {
+        'name': 'Петр Петров',
+        'gpa': 6.1,
+        'birth': '02.11.1987'
+    },
+    {
+        'name': 'Бори Борисов',
+        'gpa': 1.5,
+        'birth': '03.12.1997'
+    }
+]
 
+course = {
+    'name': 'PY-21'
+}
 
-# student = {
-#     'name': 'Test777  Test55',
-#     'gpa': 5.88,
-#     'birth': '12.08.1999'
-# }
-#
-# add_student(student)
+add_students(course, students)
+
+student = {
+    'name': 'Test777  Test55',
+    'gpa': 5.88,
+    'birth': '12.08.1999'
+}
+
+add_student(student)
 
 
 def get_student(student_id):
@@ -111,4 +117,5 @@ def get_student(student_id):
             cur.execute('select student.name from student where student.id = %s', (student_id,))
             return cur.fetchone()
 
-# print(get_student(2))
+
+print(get_student(2))

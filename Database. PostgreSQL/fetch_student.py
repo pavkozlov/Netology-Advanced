@@ -34,8 +34,13 @@ def get_students(course_id):
 def add_student(student):
     with psycopg2.connect(PARAMS) as conn:
         with conn.cursor() as cur:
-            cur.execute('insert into student (name, gpa, birth) values (%s, %s, %s)',
-                        (student['name'], student['gpa'], student['birth']))
+            command_for_add_student(cur, student)
+
+
+def command_for_add_student(cursor, student):
+    cursor.execute('insert into student (name, gpa, birth) values (%s, %s, %s) RETURNING id',
+                   (student['name'], student['gpa'], student['birth']))
+    return cursor.fetchone()[0]
 
 
 def add_students(course_id, students):
@@ -43,22 +48,14 @@ def add_students(course_id, students):
         with conn.cursor() as cur:
             cur.execute('select * from course where course.id = %s', (course_id,))
             course_in_list = cur.fetchone()
-
             if course_in_list:
                 course_id = course_in_list[0]
+                for student in students:
+                    id = command_for_add_student(cur, student)
+                    cur.execute('insert into student_course (student_id, course_id) values (%s, %s)',
+                                (id, course_id,))
             else:
-                name = input(f'Введите название курса с ID {course_id}: ')
-                cur.execute('insert into course (name, id) values (%s, %s) returning id', (name, course_id))
-                course_id = cur.fetchone()[0]
-
-            students_ids = list()
-            for student in students:
-                cur.execute('insert into student (name, gpa, birth) values (%s, %s, %s) returning id',
-                            (student['name'], student['gpa'], student['birth']))
-                students_ids.append(cur.fetchone()[0])
-
-            for id in students_ids:
-                cur.execute('insert into student_course (student_id, course_id) values (%s, %s)', (id, course_id,))
+                raise Exception('Нет такого курса')
 
 
 students = [
@@ -97,10 +94,8 @@ if __name__ == '__main__':
     create_db()
 
     add_student(test_student)
-    add_students(5, students)
+    add_students(88, students)
 
     get_by_course = get_students(3)
-    print(get_by_course)
 
     get_by_id = get_student(2)
-    print(get_by_id)
